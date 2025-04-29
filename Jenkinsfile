@@ -4,7 +4,7 @@ pipeline {
   environment {
     IMAGE_NAME = "reactapp"
     DOCKER_HUB_USER = "vishakhsingh7"
-    RANDOM_PORT = "8082"
+    RANDOM_PORT = "5173"
     CONTAINER_NAME = "${IMAGE_NAME}-${BUILD_NUMBER}"
   }
 
