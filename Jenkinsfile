@@ -30,8 +30,8 @@ pipeline {
     stage('Stop Previous Container') {
       steps {
         bat '''
-          docker stop %CONTAINER_NAME% || exit 0
-          docker rm %CONTAINER_NAME% || exit 0
+          FOR /F "tokens=1" %%i IN ('docker ps -q --filter "publish=8082"') DO docker stop %%i
+          FOR /F "tokens=1" %%i IN ('docker ps -a -q --filter "publish=8082"') DO docker rm %%i
         '''
       }
     }
