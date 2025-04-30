@@ -1,68 +1,55 @@
 pipeline {
-  agent any
+    agent any
 
-  environment {
-    IMAGE_NAME = "reactapp"
-    DOCKER_HUB_USER = "vishakhsingh7"
-    RANDOM_PORT = "5173"
-    CONTAINER_NAME = "${IMAGE_NAME}-${BUILD_NUMBER}"
-  }
+    environment {
+        DOCKER_IMAGE = 'vishakhsingh7/reactapp2:latest'
+        DOCKER_HUB_CREDENTIALS = credentials('docker-hub-credentials') // Make sure to configure Jenkins credentials
+    }
 
-  stages {
-    stage('Clone Repo') {
-      steps {
-        retry(2) {
-          bat 'git config --global http.sslVerify false'
-          git branch: 'main', url: 'https://github.com/vishakh04/Tomato.git'
+    stages {
+        stage('Checkout') {
+            steps {
+                // Pull the latest code from the GitHub repository
+                git 'https://github.com/vishakh04/Tomato.git'
+            }
         }
-      }
-    }
 
-    stage('Build Docker Image') {
-      steps {
-        bat '''
-          set DOCKER_BUILDKIT=1
-          docker build -t %IMAGE_NAME% .
-        '''
-      }
-    }
-
-    stage('Stop Previous Container') {
-      steps {
-        bat '''
-          docker stop %CONTAINER_NAME% || exit 0
-          docker rm %CONTAINER_NAME% || exit 0
-        '''
-      }
-    }
-
-    stage('Run Docker Container') {
-      steps {
-        bat '''
-          docker run -d -p %RANDOM_PORT%:80 --name %CONTAINER_NAME% %IMAGE_NAME%
-        '''
-      }
-    }
-
-    stage('Push to Docker Hub') {
-      steps {
-        withCredentials([usernamePassword(credentialsId: 'dockerhubcred', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-          bat '''
-            echo %PASS% | docker login -u %USER% --password-stdin
-            docker tag %IMAGE_NAME% %DOCKER_HUB_USER%/%IMAGE_NAME%:latest
-            docker push %DOCKER_HUB_USER%/%IMAGE_NAME%:latest
-          '''
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    // Build Docker image
+                    sh 'docker build -t $DOCKER_IMAGE .'
+                }
+            }
         }
-      }
-    }
-  }
 
-  post {
-    always {
-      bat '''
-        docker logout
-        docker system prune -f --volumes
-      '''
+        stage('Login to Docker Hub') {
+            steps {
+                script {
+                    // Log into Docker Hub
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                        sh "echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin"
+                    }
+                }
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                script {
+                    // Push the Docker image to Docker Hub
+                    sh 'docker push $DOCKER_IMAGE'
+                }
+            }
+        }
     }
-  }
+
+    post {
+        success {
+            echo 'Docker image pushed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed.'
+        }
+    }
 }
