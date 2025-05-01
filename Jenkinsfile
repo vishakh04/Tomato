@@ -3,8 +3,8 @@ pipeline {
 
   environment {
     IMAGE_NAME = "reactapp"
-    DOCKER_HUB_USER = "agammourya"
-    RANDOM_PORT = "8081"
+    DOCKER_HUB_USER = "vishakhsingh7"
+    RANDOM_PORT = "5173"
     CONTAINER_NAME = "${IMAGE_NAME}-${BUILD_NUMBER}"
   }
 
@@ -13,7 +13,7 @@ pipeline {
       steps {
         retry(2) {
           bat 'git config --global http.sslVerify false'
-          git branch: 'main', url: 'https://github.com/Agammourya15/dockerproject22.git'
+          git branch: 'main', url: 'https://github.com/vishakh04/Tomato.git'
         }
       }
     }
