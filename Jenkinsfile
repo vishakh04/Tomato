@@ -4,7 +4,8 @@ pipeline {
   environment {
     IMAGE_NAME = "reactapp"
     DOCKER_HUB_USER = "vishakhsingh7"
-    RANDOM_PORT = "5173"
+    HOST_PORT = "5173"
+    CONTAINER_PORT = "5173"
     CONTAINER_NAME = "${IMAGE_NAME}-${BUILD_NUMBER}"
   }
 
@@ -39,7 +40,7 @@ pipeline {
     stage('Run Docker Container') {
       steps {
         bat '''
-          docker run -d -p %RANDOM_PORT%:80 --name %CONTAINER_NAME% %IMAGE_NAME%
+          docker run -d -p %HOST_PORT%:%CONTAINER_PORT% --name %CONTAINER_NAME% %IMAGE_NAME%
         '''
       }
     }
