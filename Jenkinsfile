@@ -8,15 +8,15 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/your-username/your-repo.git'
+                git branch: 'main', url: 'https://github.com/vishakh04/Tomato.git'
             }
         }
 
         stage('Build Docker Images') {
             steps {
                 script {
-                    sh 'docker-compose down'
-                    sh 'docker-compose build'
+                    sh 'docker compose down'
+                    sh 'docker compose build'
                 }
             }
         }
@@ -24,7 +24,7 @@ pipeline {
         stage('Run Containers') {
             steps {
                 script {
-                    sh 'docker-compose up -d'
+                    sh 'docker compose up -d'
                 }
             }
         }
@@ -42,7 +42,7 @@ pipeline {
 
         stage('Clean Up') {
             steps {
-                sh 'docker-compose down'
+                sh 'docker compose down'
             }
         }
     }
