@@ -1,68 +1,36 @@
-pipeline {
-  agent any
+name: React App CI/CD Pipeline
 
-  environment {
-    IMAGE_NAME = "reactapp"
-    DOCKER_HUB_USER = "vishakhsingh7"
-    RANDOM_PORT = "5173"
-    CONTAINER_NAME = "${IMAGE_NAME}-${BUILD_NUMBER}"
-  }
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 
-  stages {
-    stage('Clone Repo') {
-      steps {
-        retry(2) {
-          bat 'git config --global http.sslVerify false'
-          git branch: 'main', url: 'https://github.com/vishakh04/Tomato.git'
-        }
-      }
-    }
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
 
-    stage('Build Docker Image') {
-      steps {
-        bat '''
-          set DOCKER_BUILDKIT=1
-          docker build -t %IMAGE_NAME% .
-        '''
-      }
-    }
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
-    stage('Stop Previous Container') {
-      steps {
-        bat '''
-          docker stop %CONTAINER_NAME% || exit 0
-          docker rm %CONTAINER_NAME% || exit 0
-        '''
-      }
-    }
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v3
 
-    stage('Run Docker Container') {
-      steps {
-        bat '''
-          docker run -d -p %RANDOM_PORT%:80 --name %CONTAINER_NAME% %IMAGE_NAME%
-        '''
-      }
-    }
+      - name: Build Docker Compose Services
+        run: docker-compose up -d --build
 
-    stage('Push to Docker Hub') {
-      steps {
-        withCredentials([usernamePassword(credentialsId: 'dockerhubcred', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-          bat '''
-            echo %PASS% | docker login -u %USER% --password-stdin
-            docker tag %IMAGE_NAME% %DOCKER_HUB_USER%/%IMAGE_NAME%:latest
-            docker push %DOCKER_HUB_USER%/%IMAGE_NAME%:latest
-          '''
-        }
-      }
-    }
-  }
+      - name: Wait for React App to Start
+        run: |
+          echo "Waiting for app to start..."
+          sleep 15
+          curl --retry 10 --retry-delay 5 --retry-connrefused http://localhost:5173 || exit 1
 
-  post {
-    always {
-      bat '''
-        docker logout
-        docker system prune -f --volumes
-      '''
-    }
-  }
-}
+      - name: Run Tests (Optional)
+        run: |
+          echo "You can add your test commands here, e.g. npm run test"
+          docker-compose exec react-app npm run test
+
+      - name: Shutdown Docker
+        if: always()
+        run: docker-compose down
