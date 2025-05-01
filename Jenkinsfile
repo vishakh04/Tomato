@@ -1,36 +1,55 @@
-name: React App CI/CD Pipeline
+pipeline {
+    agent any
 
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+    environment {
+        CHOKIDAR_USEPOLLING = 'true'
+    }
 
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main', url: 'https://github.com/your-username/your-repo.git'
+            }
+        }
 
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
+        stage('Build Docker Images') {
+            steps {
+                script {
+                    sh 'docker-compose down'
+                    sh 'docker-compose build'
+                }
+            }
+        }
 
-      - name: Set up Docker
-        uses: docker/setup-buildx-action@v3
+        stage('Run Containers') {
+            steps {
+                script {
+                    sh 'docker-compose up -d'
+                }
+            }
+        }
 
-      - name: Build Docker Compose Services
-        run: docker-compose up -d --build
+        stage('Test React App') {
+            steps {
+                script {
+                    sh '''
+                        sleep 10
+                        curl --retry 10 --retry-delay 5 --retry-connrefused http://localhost:5173
+                    '''
+                }
+            }
+        }
 
-      - name: Wait for React App to Start
-        run: |
-          echo "Waiting for app to start..."
-          sleep 15
-          curl --retry 10 --retry-delay 5 --retry-connrefused http://localhost:5173 || exit 1
+        stage('Clean Up') {
+            steps {
+                sh 'docker-compose down'
+            }
+        }
+    }
 
-      - name: Run Tests (Optional)
-        run: |
-          echo "You can add your test commands here, e.g. npm run test"
-          docker-compose exec react-app npm run test
-
-      - name: Shutdown Docker
-        if: always()
-        run: docker-compose down
+    post {
+        always {
+            echo 'Pipeline completed.'
+        }
+    }
+}
