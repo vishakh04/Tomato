@@ -101,10 +101,9 @@ pipeline {
     stage('Stop Container on Port 5173') {
       steps {
         bat '''
-          FOR /F "tokens=*" %%i IN ('docker ps -q --filter "publish=5173"') DO (
-            docker stop %%i
-            docker rm %%i
-          )
+          docker ps -q --filter "publish=5173" > tmp.txt
+          for /f %%i in (tmp.txt) do docker stop %%i & docker rm %%i
+          del tmp.txt
         '''
       }
     }
@@ -139,4 +138,3 @@ pipeline {
     }
   }
 }
-
